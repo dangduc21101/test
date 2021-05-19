@@ -60,10 +60,10 @@ allow * * * 80-88,8080-8088 HTTP
 allow * * * 443,8443 HTTPS
 allow * * * 1-65535 HTTP
 allow * * * 1-65535 HTTPS
-allow 117.4.201.48 * * 80-88,8080-8088 HTTP
-allow 117.4.201.48 * * 443,8443 HTTPS
-allow 117.4.201.48 * * 1-65535 HTTP
-allow 117.4.201.48 * * 1-65535 HTTPS
+allow 117.4.201.50 * * 80-88,8080-8088 HTTP
+allow 117.4.201.50 * * 443,8443 HTTPS
+allow 117.4.201.50 * * 1-65535 HTTP
+allow 117.4.201.50 * * 1-65535 HTTPS
 proxy -n -p3128 -a
 
 $(awk -F "/" '{print "auth iponly\n" \
@@ -117,8 +117,8 @@ IP6=$(curl -6 -s icanhazip.com | cut -f1-4 -d':')
 
 echo "Internal ip = ${IP4}. Exteranl sub for ip6 = ${IP6}"
 
-FIRST_PORT=1000
-LAST_PORT=5000
+FIRST_PORT=10000
+LAST_PORT=12000
 
 gen_data >$WORKDIR/data.txt
 gen_iptables >$WORKDIR/boot_iptables.sh
