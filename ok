@@ -1,0 +1,34 @@
+# Get current IPv6 address
+ipv6=$(curl -s http://v6.ipv6-test.com/api/myip.php)
+
+# Generate new IPv6 addresses by cycling the last character from 2 to f
+for i in {2..15}; do
+    addr=$(echo $ipv6 | sed "s/.$/$i/")
+    port=$((i+4000))
+    # Add new IPv6 address to eth0 interface with corresponding port number
+    sudo ip addr add $addr/64 dev eth0
+    # Append new IPv6 address to 3proxy.cfg file with corresponding port number
+    echo "proxy -6 -n -a -p$port -e$addr" | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
+done
+
+# Append additional configuration options to 3proxy.cfg file
+cat << EOF | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
+nscache 65536
+nserver 8.8.8.8
+nserver 8.8.4.4
+
+config /conf/3proxy.cfg
+monitor /conf/3proxy.cfg
+
+log /logs/3proxy-%y%m%d.log D
+rotate 60
+counter /count/3proxy.3cf
+
+include /conf/counters
+include /conf/bandlimiters
+
+auth none
+#deny * * 127.0.0.1
+allow *
+flush
+EOF
