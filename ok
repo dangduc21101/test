@@ -15,8 +15,9 @@ sudo make install
 ipv6=$(curl -s http://v6.ipv6-test.com/api/myip.php)
 
 # Generate new IPv6 addresses by cycling the last character from 2 to f
-for i in {2..15}; do
-    addr=$(echo $ipv6 | sed "s/.$/$i/")
+for i in {1..15}; do
+    hex_char=$(printf "%x" $i)
+    addr=$(echo $ipv6 | sed "s/.$/$hex_char/")
     port=$((i+4000))
     # Add new IPv6 address to eth0 interface with corresponding port number
     sudo ip addr add $addr/64 dev eth0
@@ -24,8 +25,8 @@ for i in {2..15}; do
     echo "proxy -6 -n -a -p$port -e$addr" | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
 done
 
-# Append additional configuration options to 3proxy.cfg file
-cat << EOF | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
+# Clear and append additional configuration options to 3proxy.cfg file
+cat << EOF | sudo tee /usr/local/3proxy/conf/3proxy.cfg
 nscache 65536
 nserver 8.8.8.8
 nserver 8.8.4.4
@@ -37,13 +38,25 @@ log /logs/3proxy-%y%m%d.log D
 rotate 60
 counter /count/3proxy.3cf
 
+#include /conf/passwd
 include /conf/counters
 include /conf/bandlimiters
 
 auth none
 #deny * * 127.0.0.1
 allow *
+proxy -n
+socks
 flush
 EOF
 
 sudo service 3proxy restart
+
+#Print out the list of IP and port
+echo "List of IP and port:"
+for i in {1..15}; do
+    hex_char=$(printf "%x" $i)
+    addr=$(echo $ipv6 | sed "s/.$/$hex_char/")
+    port=$((i+4000))
+    echo "$addr:$port"
+done
