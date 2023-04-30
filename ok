@@ -10,21 +10,6 @@ ln -s Makefile.Linux Makefile
 make
 sudo make install
 
-
-# Get current IPv6 address
-ipv6=$(curl -s http://v6.ipv6-test.com/api/myip.php)
-
-# Generate new IPv6 addresses by cycling the last character from 2 to f
-for i in {1..15}; do
-    hex_char=$(printf "%x" $i)
-    addr=$(echo $ipv6 | sed "s/.$/$hex_char/")
-    port=$((i+4000))
-    # Add new IPv6 address to eth0 interface with corresponding port number
-    sudo ip addr add $addr/64 dev eth0
-    # Append new IPv6 address to 3proxy.cfg file with corresponding port number
-    echo "proxy -6 -n -a -p$port -e$addr" | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
-done
-
 # Clear and append additional configuration options to 3proxy.cfg file
 cat << EOF | sudo tee /usr/local/3proxy/conf/3proxy.cfg
 nscache 65536
@@ -49,6 +34,20 @@ proxy -n
 socks
 flush
 EOF
+
+# Get current IPv6 address
+ipv6=$(curl -s http://v6.ipv6-test.com/api/myip.php)
+
+# Generate new IPv6 addresses by cycling the last character from 2 to f
+for i in {1..15}; do
+    hex_char=$(printf "%x" $i)
+    addr=$(echo $ipv6 | sed "s/.$/$hex_char/")
+    port=$((i+4000))
+    # Add new IPv6 address to eth0 interface with corresponding port number
+    sudo ip addr add $addr/64 dev eth0
+    # Append new IPv6 address to 3proxy.cfg file with corresponding port number
+    echo "proxy -6 -n -a -p$port -e$addr" | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
+done
 
 sudo service 3proxy restart
 
