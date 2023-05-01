@@ -38,8 +38,6 @@ EOF
 # Get current IPv6 address
 ipv6=$(curl -s http://v6.ipv6-test.com/api/myip.php)
 IP6=$(curl -6 -s icanhazip.com | cut -f1-4 -d':')
-FIRST_PORT=10000
-LAST_PORT=10100
 array=(1 2 3 4 5 6 7 8 9 0 a b c d e f)
 gen64() {
 	ip64() {
@@ -48,9 +46,9 @@ gen64() {
 	echo "$1:$(ip64):$(ip64):$(ip64):$(ip64)"
 }
 # Generate new IPv6 addresses by cycling the last character from 2 to f
-for i in {10000..10100}; do
+for i in {1..100}; do
     addr=$(gen64 $IP6)
-    port=$(i)
+    port=$((i+10000))
     # Add new IPv6 address to eth0 interface with corresponding port number
     sudo ip addr add $addr/64 dev eth0
     # Append new IPv6 address to 3proxy.cfg file with corresponding port number
@@ -62,3 +60,6 @@ sudo service 3proxy restart
 #Print out the list of IP and port
 echo "Done!!"
 
+
+
+#Z+*2yXN.P-!iB(p
