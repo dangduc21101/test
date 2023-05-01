@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# Install build-essential package
+sudo apt-get update
+sudo apt-get install -y build-essential
+wget https://github.com/z3APA3A/3proxy/archive/0.9.3.tar.gz
+tar -xzvf 0.9.3.tar.gz
+cd 3proxy-0.9.3
+ln -s Makefile.Linux Makefile
+make
+sudo make install
+
+# Clear and append additional configuration options to 3proxy.cfg file
+cat << EOF | sudo tee /usr/local/3proxy/conf/3proxy.cfg
+nscache 65536
+nserver 8.8.8.8
+nserver 8.8.4.4
+
+config /conf/3proxy.cfg
+monitor /conf/3proxy.cfg
+
+log /logs/3proxy-%y%m%d.log D
+rotate 60
+counter /count/3proxy.3cf
+
+#include /conf/passwd
+include /conf/counters
+include /conf/bandlimiters
+
+auth none
+#deny * * 127.0.0.1
+allow *
+proxy -n
+socks
+flush
+EOF
+
+# Get current IPv6 address
+ipv6=$(curl -s http://v6.ipv6-test.com/api/myip.php)
+IP6=$(curl -6 -s icanhazip.com | cut -f1-4 -d':')
+FIRST_PORT=10000
+LAST_PORT=10100
+array=(1 2 3 4 5 6 7 8 9 0 a b c d e f)
+gen64() {
+	ip64() {
+		echo "${array[$RANDOM % 16]}${array[$RANDOM % 16]}${array[$RANDOM % 16]}${array[$RANDOM % 16]}"
+	}
+	echo "$1:$(ip64):$(ip64):$(ip64):$(ip64)"
+}
+# Generate new IPv6 addresses by cycling the last character from 2 to f
+for i in {10000..10100}; do
+    addr=$(gen64 $IP6)
+    port=$(i)
+    # Add new IPv6 address to eth0 interface with corresponding port number
+    sudo ip addr add $addr/64 dev eth0
+    # Append new IPv6 address to 3proxy.cfg file with corresponding port number
+    echo "proxy -6 -n -a -p$port -e$addr" | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
+done
+
+sudo service 3proxy restart
+
+#Print out the list of IP and port
+echo "Done!!"
+
