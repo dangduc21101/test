@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Install build-essential package
+sudo apt-get update
+sudo apt-get install -y build-essential
+wget https://github.com/z3APA3A/3proxy/archive/0.9.3.tar.gz
+tar -xzvf 0.9.3.tar.gz
+cd 3proxy-0.9.3
+ln -s Makefile.Linux Makefile
+make
+sudo make install
+
+# Clear and append additional configuration options to 3proxy.cfg file
+cat << EOF | sudo tee /usr/local/3proxy/conf/3proxy.cfg
+nscache 65536
+nserver 8.8.8.8
+nserver 8.8.4.4
+
+config /conf/3proxy.cfg
+monitor /conf/3proxy.cfg
+
+log /logs/3proxy-%y%m%d.log D
+rotate 60
+counter /count/3proxy.3cf
+
+#include /conf/passwd
+include /conf/counters
+include /conf/bandlimiters
+
+auth none
+#deny * * 127.0.0.1
+allow *
+proxy -n
+socks
+flush
+EOF
+
+# Get current IPv6 address
+ipv6=$(curl -s http://v6.ipv6-test.com/api/myip.php)
+port=$(6001)
+echo "proxy -6 -n -a -p$port -e$ipv6" | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
+
+sudo service 3proxy restart
+echo "OK"
