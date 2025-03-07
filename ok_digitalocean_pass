@@ -27,27 +27,29 @@ counter /count/3proxy.3cf
 include /conf/counters
 include /conf/bandlimiters
 
-auth strong
-users duck:CL:12SDF35@
-allow duck
-
+#auth strong
+#users duck:CL:12SDF35@
+#allow duck
+auth none
+#deny * * 127.0.0.1
+allow *
+proxy -n
+socks
 flush
 EOF
 
 ipv6=$(curl -s http://v6.ipv6-test.com/api/myip.php)
 
-# Tách 4 nhóm đầu (prefix) cố định
-ipv6_prefix=$(echo "$ipv6" | awk -F':' '{print $1":"$2":"$3":"$4}')
+# Tách 6 nhóm đầu (prefix cố định)
+ipv6_prefix=$(echo "$ipv6" | awk -F':' '{print $1":"$2":"$3":"$4":"$5":"$6}')
 
 for i in {1..15}; do
-    # Sinh ngẫu nhiên 4 nhóm cuối
-    suffix1=$(printf "%04x" $i)    # Nhóm 5: Tăng tuần tự
-    suffix2=$(printf "%04x" $((RANDOM%65536)))  # Nhóm 6: Random
-    suffix3=$(printf "%04x" $((RANDOM%65536)))  # Nhóm 7: Random
-    suffix4=$(printf "%04x" $((RANDOM%65536)))  # Nhóm 8: Random
+    # Sinh 2 nhóm cuối (thay đổi)
+    suffix1=$(printf "%04x" $i)    # Nhóm 7: Tăng tuần tự từ 0001 -> 000F
+    suffix2=$(printf "%04x" $((RANDOM%65536)))  # Nhóm 8: Random
 
     # Gộp lại thành IPv6 mới
-    new_ipv6="${ipv6_prefix}:${suffix1}:${suffix2}:${suffix3}:${suffix4}"
+    new_ipv6="${ipv6_prefix}:${suffix1}:${suffix2}"
 
     port=$((i+4000))  # Gán cổng từ 4001 -> 4015
 
