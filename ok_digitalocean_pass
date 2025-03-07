@@ -27,37 +27,25 @@ counter /count/3proxy.3cf
 include /conf/counters
 include /conf/bandlimiters
 
-#auth strong
-#users duck:CL:12SDF35@
-#allow duck
-auth none
-#deny * * 127.0.0.1
-allow *
-proxy -n
-socks
+auth strong
+users duck:CL:12SDF35@
+allow duck
+
 flush
 EOF
 
+# Get current IPv6 address
 ipv6=$(curl -s http://v6.ipv6-test.com/api/myip.php)
 
-# Tách 6 nhóm đầu (prefix cố định)
-ipv6_prefix=$(echo "$ipv6" | awk -F':' '{print $1":"$2":"$3":"$4":"$5":"$6}')
-
+# Generate new IPv6 addresses by cycling the last character from 2 to f
 for i in {1..15}; do
-    # Sinh 2 nhóm cuối (thay đổi)
-    suffix1=$(printf "%04x" $i)    # Nhóm 7: Tăng tuần tự từ 0001 -> 000F
-    suffix2=$(printf "%04x" $((RANDOM%65536)))  # Nhóm 8: Random
-
-    # Gộp lại thành IPv6 mới
-    new_ipv6="${ipv6_prefix}:${suffix1}:${suffix2}"
-
-    port=$((i+4000))  # Gán cổng từ 4001 -> 4015
-
-    # Thêm IPv6 vào eth0
-    sudo ip addr add "$new_ipv6/64" dev eth0
-
-    # Cấu hình vào 3proxy
-    echo "proxy -6 -n -a -p$port -e$new_ipv6" | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
+    hex_char=$(printf "%x" $i)
+    addr=$(echo $ipv6 | sed "s/.$/$hex_char/")
+    port=$((i+4000))
+    # Add new IPv6 address to eth0 interface with corresponding port number
+    sudo ip addr add $addr/64 dev eth0
+    # Append new IPv6 address to 3proxy.cfg file with corresponding port number
+    echo "proxy -6 -n -a -p$port -e$addr" | sudo tee -a /usr/local/3proxy/conf/3proxy.cfg
 done
 
 sudo service 3proxy restart
